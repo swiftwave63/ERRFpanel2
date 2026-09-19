@@ -527,14 +527,14 @@ async def api_update_settings(request: Request, user: str = Depends(require_auth
                 if not v:
                     continue
             if k == "remark_template":
-                # Only the controlled placeholders {prefix} {name} {proto} are allowed.
+                # Only the controlled placeholders {prefix} {name} {proto} {location} are allowed.
                 # Must contain at least {name}; anything else falls back (key untouched).
                 if not isinstance(v, str):
                     continue
                 v = v[:128].strip()
                 if "{name}" not in v:
                     continue
-                if re.sub(r"\{(prefix|name|proto)\}", "", v).find("{") != -1:
+                if re.sub(r"\{(prefix|name|proto|location)\}", "", v).find("{") != -1:
                     continue
             s[k] = v
 
@@ -568,6 +568,7 @@ async def api_create_inbound(request: Request, user: str = Depends(require_auth)
     max_requests = int(payload.get("max_requests") or 0)
     fp = payload.get("fp") or (db.get("settings") or {}).get("default_fingerprint", "chrome")
     strict_single_ip = bool(payload.get("strict_single_ip") or False)
+    sub_top_text = _clean_remark_token(payload.get("sub_top_text") or "", 140)
 
     ib = {
         "uid": gen_uid(),
@@ -586,6 +587,7 @@ async def api_create_inbound(request: Request, user: str = Depends(require_auth)
         "fp": fp,
         "strict_single_ip": strict_single_ip,
         "note": payload.get("note", "")[:200] if payload.get("note") else "",
+        "sub_top_text": sub_top_text,
     }
 
     def _apply(db):
@@ -601,7 +603,7 @@ async def api_create_inbound(request: Request, user: str = Depends(require_auth)
 async def api_update_inbound(uid: str, request: Request, user: str = Depends(require_auth)):
     payload = await request.json()
     editable = {"name", "enabled", "quota_gb", "expire_days", "max_connections",
-                "max_requests", "fp", "strict_single_ip", "note"}
+                "max_requests", "fp", "strict_single_ip", "note", "sub_top_text"}
     updated = {}
 
     def _apply(db):
@@ -610,7 +612,10 @@ async def api_update_inbound(uid: str, request: Request, user: str = Depends(req
             raise HTTPException(404, "not-found")
         for k, v in payload.items():
             if k in editable:
-                ib[k] = v
+                if k == "sub_top_text":
+                    ib[k] = _clean_remark_token(v or "", 140)
+                else:
+                    ib[k] = v
         if "expire_days" in payload:
             days = int(payload["expire_days"] or 0)
             ib["expire_at"] = (ib["created_at"] + days * 86400) if days > 0 else None
@@ -687,10 +692,50 @@ def get_remark_prefix(settings) -> str:
     return _clean_remark_token((settings or {}).get("remark_prefix") or "ERRFpanel", 32) or "ERRFpanel"
 
 
-def render_config_remark(settings, name: str, proto: str) -> str:
+# ---- best-effort egress location flag cache (presentation only) ----
+# Resolved exclusively from the existing Cloudflare-trace colo lookup.
+# This is an egress/colo approximation, NOT authoritative geolocation.
+# Cache lives in memory only: never persisted, never per-user, never blocking.
+_LOCATION_CACHE = {"flag": "", "ts": 0.0}
+_LOCATION_TTL_SECONDS = 3600
+
+
+def get_cached_location_flag() -> str:
+    """Return the last known egress country flag ("" when unknown).
+
+    Pure memory read — never performs I/O, never blocks subscription rendering.
+    """
+    return _LOCATION_CACHE.get("flag") or ""
+
+
+def note_location_colo(colo: str):
+    """Refresh the cached flag from a colo code (throttled, best-effort).
+
+    Unknown/unresolvable colos leave the previous value untouched — we never
+    invent a country. Callers must already have the colo string; this function
+    performs no network I/O itself.
+    """
+    now = time.time()
+    if _LOCATION_CACHE.get("flag") and (now - (_LOCATION_CACHE.get("ts") or 0)) < _LOCATION_TTL_SECONDS:
+        return
+    try:
+        info = describe_colo(colo)
+    except Exception:
+        return
+    if not info or info.get("city") == "Unknown":
+        return
+    flag = _clean_remark_token(info.get("flag") or "", 16)
+    if not flag:
+        return
+    _LOCATION_CACHE["flag"] = flag
+    _LOCATION_CACHE["ts"] = now
+
+
+def render_config_remark(settings, name: str, proto: str, location: str = "") -> str:
     """Render a display remark from the admin-configured template.
 
-    Only the controlled placeholders {prefix} {name} {proto} are expanded.
+    Only the controlled placeholders {prefix} {name} {proto} {location} are expanded.
+    {location} is an optional best-effort egress country flag ("" when unknown).
     Any misconfiguration falls back to the default template so output is
     never broken and never affects connection parameters.
     """
@@ -699,13 +744,15 @@ def render_config_remark(settings, name: str, proto: str) -> str:
     template = ((settings.get("remark_template") or DEFAULT_REMARK_TEMPLATE))[:128]
     if "{name}" not in template:
         template = DEFAULT_REMARK_TEMPLATE
-    if re.sub(r"\{(prefix|name|proto)\}", "", template).find("{") != -1:
+    if re.sub(r"\{(prefix|name|proto|location)\}", "", template).find("{") != -1:
         template = DEFAULT_REMARK_TEMPLATE
+    location = _clean_remark_token(location or "", 16)
     remark = (
         template
         .replace("{prefix}", prefix)
         .replace("{name}", name or "User")
         .replace("{proto}", proto)
+        .replace("{location}", location)
     )
     remark = _clean_remark_token(remark, 96)
     return remark or f"{prefix}-{name or 'User'}-{proto}"
@@ -725,10 +772,11 @@ def build_links(request: Request, db, ib) -> dict:
     alpn = settings.get("default_alpn", "http/1.1")
     sni = settings.get("sni_override") or host
     port_tls = 443
+    location = get_cached_location_flag()
 
-    remark_ws = render_config_remark(settings, name, "VL-WS-TLS")
-    remark_vm = render_config_remark(settings, name, "VM-WS-TLS")
-    remark_xh = render_config_remark(settings, name, "VL-XHTTP-TLS")
+    remark_ws = render_config_remark(settings, name, "VL-WS-TLS", location)
+    remark_vm = render_config_remark(settings, name, "VM-WS-TLS", location)
+    remark_xh = render_config_remark(settings, name, "VL-XHTTP-TLS", location)
 
     vl_ws_tls = f"vless://{uuidv}@{host}:{port_tls}?encryption=none&security=tls&type=ws&host={quote(host)}&path={quote('/vl-ws', safe='/')}&sni={quote(sni)}&fp={fp}&alpn={quote(alpn, safe=',/')}#{quote(remark_ws)}"
 
@@ -833,6 +881,14 @@ async def sub_plain(uid: str, request: Request):
     expire_ts = int(ib.get("expire_at") or 0)
     user_info_header = f"upload={used_up}; download={used_down}; total={total_bytes}; expire={expire_ts}"
 
+    # Per-user subscription title: sub_top_text delivered via the real
+    # Profile-Title response header (never a dummy link). Empty = legacy fixed title.
+    per_top = _clean_remark_token(ib.get("sub_top_text") or "", 140)
+    if per_top:
+        profile_title = "base64:" + base64.b64encode(per_top.encode("utf-8")).decode()
+    else:
+        profile_title = "base64:RVJSRnBhbmVsIPCfmoA="
+
     headers = {
         "Content-Type": "text/plain; charset=utf-8",
         "Subscription-Userinfo": user_info_header,
@@ -840,7 +896,7 @@ async def sub_plain(uid: str, request: Request):
         "Profile-Update-Interval": "1",
         "profile-update-interval": "1",
         # تغییر زیر اعمال شده است:
-        "Profile-Title": "base64:RVJSRnBhbmVsIPCfmoA=",
+        "Profile-Title": profile_title,
         "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
         "Pragma": "no-cache",
         "Expires": "0",
@@ -948,6 +1004,10 @@ async def stats(request: Request, user: str = Depends(require_auth)):
                     colo = line.split("=", 1)[1]
     except Exception:
         pass
+
+    # Refresh the best-effort remark location flag from the already-fetched colo.
+    # No extra request: this reuses the trace result above (throttled, keeps last valid).
+    note_location_colo(colo)
 
     # ========== روش جدید: شمارش کاربرانی که در ۳۰ ثانیه اخیر ترافیک داشتند ==========
     def get_active_connections():

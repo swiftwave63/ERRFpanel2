@@ -266,7 +266,7 @@
               <div class="field">
                 <label data-i18n="settings_remark_template">قالب نام کانفیگ</label>
                 <input class="input" type="text" id="settingRemarkTemplate" maxlength="128" placeholder="{prefix}-{name}-{proto}" style="direction:ltr;">
-                <div class="small muted mt-8" data-i18n="settings_remark_hint">فقط {prefix} و {name} و {proto} مجاز هستند. مثال: {prefix}-{name}-{proto}</div>
+                <div class="small muted mt-8" data-i18n="settings_remark_hint">{prefix}، {name}، {proto} و {location} مجاز هستند. مثال: {prefix}-{name}-{proto}-{location}</div>
               </div>
               <div class="field">
                 <label data-i18n="inb_fingerprint">اثر انگشت پیش‌فرض (Fingerprint)</label>
@@ -336,6 +336,10 @@
           <div class="field span-2">
             <label data-i18n="inb_name">نام</label>
             <input class="input" type="text" id="fName" required maxlength="64">
+          </div>
+          <div class="field span-2">
+            <label>Subscription Top Text</label>
+            <input class="input" type="text" id="fSubTop" maxlength="140" placeholder="VIP 30GB - Ali" style="direction:auto;">
           </div>
           <div class="field">
             <label data-i18n="inb_quota">حجم مجاز (GB)</label>

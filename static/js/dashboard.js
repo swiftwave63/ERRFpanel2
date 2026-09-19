@@ -41,6 +41,7 @@
     viewTitle.textContent = STANNG.t(titleKeys[name]);
     if (name === 'inbounds') loadInbounds();
     if (name === 'traffic') loadInbounds();
+    if (name === 'dashboard') renderTrafficChart(document.getElementById('trafficChart'), lastHourly);
     closeSidebarMobile();
   }
   navItems.forEach(item => item.addEventListener('click', () => showView(item.dataset.view)));
@@ -119,7 +120,15 @@
       document.getElementById('trafficUp').textContent = STANNG.fmtBytes(s.total_up || 0);
       document.getElementById('trafficDown').textContent = STANNG.fmtBytes(s.total_down || 0);
       lastHourly = s.hourly || [];
-      renderTrafficChart(document.getElementById('trafficChart'), lastHourly);
+      const dashView = document.getElementById('view-dashboard');
+      const chartEl = document.getElementById('trafficChart');
+      const dashActive = dashView && dashView.classList.contains('active');
+      let chartVisible = false;
+      if (dashActive && chartEl) {
+        const r = chartEl.getBoundingClientRect();
+        chartVisible = r.bottom > 0 && r.top < window.innerHeight && r.right > 0 && r.left < window.innerWidth;
+      }
+      if (dashActive && chartVisible) renderTrafficChart(chartEl, lastHourly);
     } catch (e) { /* ignore transient errors */ }
   }
   refreshStats();
@@ -297,6 +306,7 @@
     document.getElementById('inboundModalTitle').textContent = ib ? STANNG.t('edit') : STANNG.t('inb_add');
     document.getElementById('inboundUid').value = ib ? ib.uid : '';
     document.getElementById('fName').value = ib ? ib.name : '';
+    document.getElementById('fSubTop').value = ib ? (ib.sub_top_text || '') : '';
     document.getElementById('fQuota').value = ib ? (ib.quota_gb || '') : '';
     document.getElementById('fExpire').value = ib ? (ib.expire_days || '') : '';
     document.getElementById('fMaxConn').value = ib ? (ib.max_connections || '') : '';
@@ -313,6 +323,7 @@
     const uid = document.getElementById('inboundUid').value;
     const payload = {
       name: document.getElementById('fName').value.trim() || 'User',
+      sub_top_text: document.getElementById('fSubTop').value.replace(/\r/g, ' ').replace(/\n/g, ' ').trim().slice(0, 140),
       quota_gb: parseFloat(document.getElementById('fQuota').value || 0),
       expire_days: parseInt(document.getElementById('fExpire').value || 0),
       max_connections: parseInt(document.getElementById('fMaxConn').value || 0),

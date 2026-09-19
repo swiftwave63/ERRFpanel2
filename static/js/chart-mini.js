@@ -286,11 +286,15 @@
     canvas.addEventListener('mouseleave', hide);
     canvas.addEventListener('touchstart', (e) => {
       const t = e.touches[0];
-      if (t) showAt(t.clientX, t.clientY);
+      if (!t) return;
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => showAt(t.clientX, t.clientY));
     }, { passive: true });
     canvas.addEventListener('touchmove', (e) => {
       const t = e.touches[0];
-      if (t) showAt(t.clientX, t.clientY);
+      if (!t) return;
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => showAt(t.clientX, t.clientY));
     }, { passive: true });
     canvas.addEventListener('touchend', () => setTimeout(hide, 1500));
   }

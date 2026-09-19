@@ -435,6 +435,9 @@ select.input option { background: var(--bg-2); color: var(--text-0); }
   animation: fab-breathe 3.5s ease-in-out infinite;
 }
 .telegram-fab svg { width: 26px; height: 26px; }
+/* Auth pages (Login/Setup only): lift Telegram FAB above the fixed music dock.
+   Dashboard and Status pages are intentionally unaffected. */
+.auth-page .telegram-fab { bottom: 84px; }
 @keyframes fab-breathe {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.07); }
@@ -493,6 +496,10 @@ select.input option { background: var(--bg-2); color: var(--text-0); }
 }
 
 /* ---------------- responsive / motion ---------------- */
+@media (max-width: 700px) {
+  .telegram-fab { animation: none; }
+  .music-btn.is-paused { animation: none; }
+}
 @media (max-width: 520px) {
   .auth-card { padding: 26px 20px 22px; }
   .toast-stack { top: 12px; inset-inline-end: 12px; }

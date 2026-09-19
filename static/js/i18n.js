@@ -162,7 +162,7 @@ window.I18N = {
   settings_sub_header_hint: { fa: 'این متن در بالای خروجی اشتراک نمایش داده می‌شود. خالی = رفتار قبلی.', en: 'Shown at the top of the subscription output. Empty = legacy behavior.' },
   settings_remark_prefix: { fa: 'پیشوند نام کانفیگ', en: 'Config name prefix' },
   settings_remark_template: { fa: 'قالب نام کانفیگ', en: 'Config name template' },
-  settings_remark_hint: { fa: 'فقط {prefix} و {name} و {proto} مجاز هستند. مثال: {prefix}-{name}-{proto}', en: 'Only {prefix}, {name} and {proto} are allowed. Example: {prefix}-{name}-{proto}' },
+  settings_remark_hint: { fa: 'فقط {prefix} و {name} و {proto} و {location} مجاز هستند. مثال: {prefix}-{name}-{proto}-{location} (مکان: پرچم تقریبی، خالی اگر نامشخص)', en: 'Only {prefix}, {name}, {proto} and {location} are allowed. Example: {prefix}-{name}-{proto}-{location} (location: best-effort flag, empty if unknown)' },
   settings_theme: { fa: 'پوسته', en: 'Theme' },
   settings_theme_dark: { fa: 'تاریک', en: 'Dark' },
   settings_theme_light: { fa: 'روشن', en: 'Light' },
