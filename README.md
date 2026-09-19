@@ -1,169 +1,178 @@
 <div align="center">
 
-<img src="static/img/logo-square.png" width="110" alt="StanNG logo">
+<img src="static/img/errf-logo.svg" width="110" alt="ERRFpanel logo">
 
-# ⚡ StanNG v1.5.5
+# ERRFpanel v1.5.5
 
-### یک پنل تک‌سرویسهٔ VLESS با تم جادوگری  
-**A single‑service VLESS panel with a wizarding theme**
-
-> # ⚠️ **پنل StanNG رایگان و غیر قابل فروش است**
->
-> هرگونه فروش این پنل ممنوع بوده و تخلف محسوب می‌شود.
-
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template)
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
-
-<img src="docs/screenshots/login.jpg" width="720" alt="StanNG login screen">
+### Single-service VLESS / VMess panel with Liquid Glass UI
+**FastAPI + Xray-core in one container, local JSON storage, bilingual FA/EN**
 
 </div>
 
 ---
 
-## ویژگی‌ها
+## What it is
 
-| فارسی |
-|-------|
-| 🪄 **بدون دیتابیس** — همه‌چیز در یک فایل JSON محلی |
-| 👤 **تنظیم یک‌باره** — اولین بازدید، نام کاربری/رمز را می‌سازد |
-| 📱 **واکنش‌گرا** — کاملاً سازگار با موبایل |
-| 📊 **محدودیت‌های پیشرفته** — حجم (GB)، روز اعتبار، سقف درخواست و قطع خودکار |
-| 🔌 **کنترل همزمان** — محدودیت تعداد دستگاه + قفل IP |
-| ⚙️ **تنظیمات سراسری** — Fingerprint، ALPN، SNI، Fragment و پروتکل‌های انتقال (xhttp، ws) |
-| 🔄 **آپدیت درون‌پنلی** — یک‌کلیک، بدون از دست دادن داده‌ها |
-| 🔗 **لینک اشتراک v2rayNG** — خروجی متن ساده (Plain Text)، کاملاً سازگار |
-| 🛑 **ابطال لینک‌ها** — چرخش UUID برای ابطال آنی |
-| 📱 **صفحه وضعیت عمومی** — لینک عمومی برای رصد مصرف، بدون نیاز به ورود |
-| 🌍 **مکان‌یابی خودکار** — تشخیص شهر/کشور سرور از Cloudflare trace |
-| 🌗 **حالت تاریک/روشن + دو زبانه** — فارسی و انگلیسی، فونت محلی |
-| 🔊 **جلوه صوتی و انیمیشن** — بدون وابستگی خارجی |
-| 💬 **دکمه پشتیبانی تلگرام** — دسترسی سریع به پشتیبانی |
-| ⏱ **بیدارباش خودکار** — پینگ داخلی هر ۱۰ دقیقه |
+ERRFpanel is a single-service management panel for VLESS and VMess over WebSocket / XHTTP with TLS.
+The backend (`main.py`, FastAPI) manages users, generates Xray config, restarts Xray, collects traffic stats from the Xray stats API, and serves subscriptions. All persistent state lives in one local file: `data/db.json`.
+
+Repository: `https://github.com/errf21/ERRFpanel2`
 
 ---
 
-## 🆕 تغییرات نسخه ۱.۵.۵
+## Features (as implemented)
 
-- ✅ **رفع باگ‌ها و مشکلات** — رفع باگ‌های OTA، آمار ترافیک، نمودار ساعتی، منوی ترافیک و کانفیگ‌های نمایشی.
-- ✅ **اضافه شدن XHTTP و پشتیبانی از DOH** — پشتیبانی از پروتکل انتقال xhttp و DNS‑over‑HTTPS داخلی.
-- ✅ **به‌سازی دریافت آمار از Xray** — استفاده از خروجی JSON به‌جای regex برای دقت بیشتر.
-- ✅ **شمارش دقیق اتصالات فعال** — تشخیص کاربران بر اساس آخرین ترافیک (last_seen) بدون وابستگی به netstat.
-- ✅ **بهینه‌سازی کلی پنل** — بهبود عملکرد و کاهش مصرف منابع.
-
----
-
-## 🖼 تصاویر
-
-<table>
-<tr>
-<td width="50%"><img src="docs/screenshots/dashboard.jpg" alt="Dashboard"></td>
-<td width="50%"><img src="docs/screenshots/inbounds.jpg" alt="Inbounds"></td>
-</tr>
-<tr>
-<td align="center"><sub>داشبورد با نمودار ترافیک ساعتی</sub></td>
-<td align="center"><sub>مدیریت کاربران و اینباندها</sub></td>
-</tr>
-<tr>
-<td width="50%"><img src="docs/screenshots/links_modal.jpg" alt="Links & QR"></td>
-<td width="50%"><img src="docs/screenshots/settings.jpg" alt="Settings"></td>
-</tr>
-<tr>
-<td align="center"><sub>لینک‌های اشتراک و QR</sub></td>
-<td align="center"><sub>تنظیمات عمومی و پیشرفته</sub></td>
-</tr>
-</table>
-
-<div align="center">
-<img src="docs/screenshots/mobile_inbounds.jpg" width="280" alt="Mobile view">
-<br><sub>نمای واکنش‌گرا روی موبایل — جدول‌ها به کارت تبدیل می‌شوند</sub>
-</div>
+- **No external database** — everything in `data/db.json` (admin, settings, inbounds, stats, login attempts).
+- **One-time setup** — first visit to `/setup` creates the admin username/password.
+- **Session auth** — `httponly` session cookie, PBKDF2 password hashing, login rate-limit with temporary lockout.
+- **Dashboard** — CPU, memory, uptime, total up/down traffic, 24-hour traffic chart, active connections (recent-traffic based), server location, inbound count.
+- **User / inbound management** — create, list, edit, delete; per-user `name`, `quota_gb`, `expire_days`, `max_connections`, `max_requests`, `fp` (fingerprint), `strict_single_ip`, `note`.
+- **Usage controls** — quota (GB), expiry date, max active connections, max requests, enable/disable, usage reset.
+- **Link revocation** — regenerate UUID per user to instantly invalidate old links.
+- **Generated configs** — VLESS WS TLS (port 443, `/vl-ws`), VMess WS TLS (`/vm-ws`), VLESS XHTTP TLS (`/vl-xhttp`); QR code for the TLS link.
+- **Subscription output** — `/sub/<uid>` returns base64 plain text plus `Subscription-Userinfo` header; `/sub/<uid>/json` returns JSON.
+- **Public status page** — `/status/<uid>` (HTML) and `/api/status/<uid>` (JSON, read-only usage/quota/expiry/connections).
+- **Global settings** — `lang` (fa/en), `theme` (dark/light), `public_domain`, `keep_alive`, `default_fingerprint` (chrome/ios/firefox/edge/random), `default_alpn`, `sni_override`, `fragment_enabled`, `fragment_packets`, `fragment_length`, `fragment_interval`, `sub_header_text`, `remark_prefix`, `remark_template`.
+- **In-panel OTA update** — check GitHub releases and self-update from `errf21/ERRFpanel2`; the `data/` directory is never overwritten.
+- **DoH proxy** — `/dns-query` (GET/POST/OPTIONS) forwarded to `1.1.1.1` / `8.8.8.8`.
+- **Liquid Glass UI** — dark/light themes, bilingual Persian/English, self-hosted Vazirmatn fonts, responsive layout, background music player, Telegram support button.
+- **Health / stats** — `/health`, `/stats` (authenticated).
 
 ---
 
-## 🚀 نصب سریع
+## Quick start
 
-### 🚂 Railway (توصیه‌شده)
-- ریپازیتوری را Fork یا push کنید.
-- در [railway.app](https://railway.app) → **New Project → Deploy from GitHub repo**.
-- Railway `railway.json` را تشخیص داده و `python main.py` اجرا می‌کند.
-- پس از دیپلوی، به آدرس سرویس + `/setup` بروید و نام‌کاربری/رمز عبور بسازید.
+### Local run
 
-> 💡 Railway از IP اختصاصی استفاده می‌کند (نه کلودفلر). در صورت فیلتر، حالت Fragment را از پنل (تنظیمات → پیشرفته) و کلاینت فعال کنید.
-
-### 🌐 Render
-- Fork/push به گیت‌هاب.
-- در [render.com](https://render.com) → **New → Web Service** → ریپازیتوری را وصل کنید؛ `render.yaml` شناسایی می‌شود.
-- بعد از دیپلوی به `/setup` بروید.
-
-> 💡 روی Render پشت شبکهٔ Cloudflare هستید؛ کانفیگ‌ها از آی‌پی‌های تمیز عبور می‌کنند.
-
-### 💻 اجرای محلی
 ```bash
-git clone https://github.com/<your-username>/StanNG.git
-cd StanNG
+git clone https://github.com/errf21/ERRFpanel2
+cd ERRFpanel2
 pip install -r requirements.txt
 python main.py
-# → http://localhost:8000/setup
+# → http://localhost:10000/setup (or PANEL_PORT if set)
 ```
 
----
+### Docker
 
-## 🧭 راه‌اندازی اولیه
+```bash
+docker build -t errfpanel .
+docker run -p 8000:8000 errfpanel
+# public port comes from PORT (default 8000 in entrypoint.sh)
+# internal panel port comes from PANEL_PORT (default 10000)
+```
 
-1. بازدید از `<your-domain>/setup`  
-2. ساخت نام‌کاربری و رمز عبور (این همان اعتبار مدیریتی برای همیشه خواهد بود)  
-3. پس از ورود، کاربران خود را در بخش **اینباندها** بسازید.  
-4. در **تنظیمات** → **تنظیمات پیشرفته کانفیگ** می‌توانید پروتکل انتقال (xhttp، ws) و سایر پارامترها را تغییر دهید.
+### Railway
 
----
+- Push/fork this repository.
+- New Project → Deploy from GitHub repo.
+- Railway uses `railway.json` (`bash /app/entrypoint.sh`).
+- After deploy, open the service URL + `/setup`.
 
-## 🔧 متغیرهای محیطی
+### Render
 
-| متغیر | پیش‌فرض | توضیح |
-|-------|---------|-------|
-| `PORT` | `8000` | پورت اجرا |
-| `SECRET_KEY` | (خودکار) | کلید رمزنگاری نشست‌ها (توصیه می‌شود در محیط ابری تنظیم شود) |
-| `BASE_PATH` | `""` | در صورت نیاز به مسیر پایه (مثلاً `/stan`) |
-
----
-
-## 📚 مستندات API
-
-| مسیر | متد | توضیح |
-|------|------|-------|
-| `/api/login` | POST | ورود با username/password، دریافت توکن |
-| `/api/users` | GET | لیست تمام کاربران (نیاز به توکن) |
-| `/api/users` | POST | ایجاد کاربر جدید (نیاز به توکن) |
-| `/api/users/<uid>` | PUT | ویرایش کاربر |
-| `/api/users/<uid>` | DELETE | حذف کاربر |
-| `/api/users/<uid>/rotate` | POST | چرخش UUID |
-| `/api/settings` | GET/PUT | دریافت/ویرایش تنظیمات عمومی و پیشرفته |
-| `/api/status` | GET | وضعیت سرور (CPU، RAM، دیسک) |
-| `/api/update` | POST | آپدیت خودکار (نیاز به توکن) |
-| `/sub/<uid>` | GET | لینک اشتراک متن ساده (عمومی) |
-| `/status/<uid>` | GET | صفحه وضعیت عمومی (فقط خواندنی) |
-
-> تمام درخواست‌های محافظت‌شده نیاز به هدر `Authorization: Bearer <token>` دارند.
+- Push/fork to GitHub.
+- New → Web Service → connect the repo; `render.yaml` is detected.
+- After deploy, open the service URL + `/setup`.
 
 ---
 
-## 🔒 نکات امنیتی
+## Initial setup
 
-- **رمز عبور** را قوی انتخاب کنید و هرگز به اشتراک نگذارید.  
-- **فایل `data.json`** حاوی تمام اطلاعات حساس است؛ از دسترسی مستقیم به آن جلوگیری کنید (مسیریابی نشده).  
-- در صورت نشت لینک اشتراک، از دکمه **چرخش UUID** در پنل استفاده کنید تا لینک‌های قبلی بی‌اثر شوند.  
-- توصیه می‌شود از HTTPS (مثلاً با Cloudflare یا خود پلتفرم) استفاده شود.
-
----
-
-## 📜 مجوز و اعتبارها
-
-- این پروژه تحت مجوز **MIT** منتشر شده است.  
-- ساخته شده با ❤️ توسط جامعهٔ متن‌باز.  
-- فونت **وزیرمتن** (Vazirmatn) با مجوز OFL.  
-- نمادها و طراحی الهام‌گرفته از تم جادوگری.  
-- **قدردانی ویژه** از [**Alireza78na**](https://github.com/Alireza78na) برای بهبودها و رفع باگ‌های ارزشمند.
+1. Open `<your-domain>/setup`.
+2. Create admin username (letters/numbers/underscore, 3–32 chars) and password (min 6 chars).
+3. Sign in at `/login`, open the dashboard at `/dashboard`.
+4. Create users under Inbounds.
+5. Tune defaults under Settings → Advanced Config Settings.
 
 ---
 
-<div align="center">**StanNG** — ساده، سبک، و جادویی 🧙‍♂️</div>
+## Environment variables (as implemented)
+
+| Variable | Default | Notes |
+|----------|---------|-------|
+| `PORT` | `8000` | Public Nginx port (see `entrypoint.sh`). |
+| `PANEL_PORT` | `10000` | Internal FastAPI panel port (`main.py`). |
+
+Persistent data: `data/db.json` (created on first run with a generated `secret_key`).
+
+---
+
+## API routes (as implemented in `main.py`)
+
+### Pages
+
+| Route | Method | Notes |
+|-------|--------|-------|
+| `/` | GET | Redirects to `/setup`, `/login`, or `/dashboard`. |
+| `/setup` | GET | Initial admin creation page. |
+| `/login` | GET | Admin login page. |
+| `/dashboard` | GET | Main panel (requires login). |
+| `/status/{uid}` | GET | Public read-only status page. |
+
+### Auth / account
+
+| Route | Method | Notes |
+|-------|--------|-------|
+| `/api/setup-status` | GET | `{needs_setup}`. |
+| `/api/setup` | POST | Create admin (once). Sets session cookie. |
+| `/api/login` | POST | Username/password login. Sets session cookie. |
+| `/api/logout` | POST | Clears session cookie. |
+| `/api/me` | GET | Login state, username, settings, app version. |
+| `/api/change-password` | POST | Auth required. Change username/password. |
+| `/api/settings` | POST | Auth required. Update allowed settings keys. |
+
+### Inbounds / users
+
+| Route | Method | Notes |
+|-------|--------|-------|
+| `/api/inbounds` | GET | Auth required. List inbounds. |
+| `/api/inbounds` | POST | Auth required. Create inbound. |
+| `/api/inbounds/{uid}` | PATCH | Auth required. Edit inbound. |
+| `/api/inbounds/{uid}` | DELETE | Auth required. Delete inbound. |
+| `/api/inbounds/{uid}/reset-usage` | POST | Auth required. Reset usage counters. |
+| `/api/inbounds/{uid}/regenerate` | POST | Auth required. Rotate UUID (revoke old links). |
+| `/api/inbounds/{uid}/links` | GET | Auth required. TLS link, all links, sub/status/DoH URLs. |
+| `/api/inbounds/{uid}/qr` | GET | Auth required. QR PNG for TLS link. |
+| `/api/inbounds/{uid}/sub` | GET | Auth required. Alias of subscription JSON. |
+
+### Subscriptions / public status
+
+| Route | Method | Notes |
+|-------|--------|-------|
+| `/sub/{uid}` | GET | Public base64 plain-text subscription. |
+| `/sub/{uid}/json` | GET | Public subscription JSON. |
+| `/api/status/{uid}` | GET | Public status JSON. |
+
+### System / services
+
+| Route | Method | Notes |
+|-------|--------|-------|
+| `/health` | GET | Liveness check. |
+| `/stats` | GET | Auth required. CPU/RAM/uptime/traffic/hourly/location. |
+| `/dns-query` | GET/POST/OPTIONS | DNS-over-HTTPS proxy. |
+| `/api/ota/check` | GET | Auth required. Compare current vs latest release. |
+| `/api/ota/update` | POST | Auth required. Download release zip, apply, restart. |
+
+> Authenticated routes use the session cookie set by `/api/setup` and `/api/login`.
+
+---
+
+## Security notes
+
+- Choose a strong admin password.
+- `data/db.json` contains all sensitive state; do not expose it directly (it is not routed).
+- If a subscription link leaks, use Regenerate (UUID rotation) for that user.
+- Use HTTPS in production (platform ingress / reverse proxy).
+
+---
+
+## License and attribution
+
+- This project is released under the **MIT** License (see `LICENSE`).
+- Font **Vazirmatn** under SIL Open Font License 1.1 (see `static/fonts/LICENSE-vazirmatn.txt`).
+- App artwork in `static/img/` is AI-generated for this project (see `static/img/LICENSE-assets.txt`).
+- Core proxying uses **Xray-core** (see `Dockerfile` / `xray_manager.py`).
+
+---
+
+<div align="center">**ERRFpanel** — Liquid Glass VLESS / VMess panel</div>

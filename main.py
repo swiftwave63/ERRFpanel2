@@ -37,10 +37,10 @@ APP_VERSION = "1.5.5"
 ASSET_VERSION = "2"
 PANEL_NAME = "ERRFpanel"
 TELEGRAM_CONTACT = "https://t.me/Espierz"
-OTA_REPO = "youdidking/stanngv2"
+OTA_REPO = "errf21/ERRFpanel2"
 OTA_HEADERS = {
     "Accept": "application/vnd.github+json",
-    "User-Agent": f"StanNG-Panel/{APP_VERSION}",
+    "User-Agent": f"ERRFpanel-Panel/{APP_VERSION}",
 }
 SESSION_COOKIE = "stanng_session"
 SESSION_MAX_AGE = 60 * 60 * 24 * 7

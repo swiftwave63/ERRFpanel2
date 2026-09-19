@@ -1,5 +1,5 @@
 """
-StanNG - Persistent JSON storage layer.
+ERRFpanel - Persistent JSON storage layer.
 Single-file, dependency-free storage engine (no external DB required).
 Thread/async safe via an in-process lock + atomic file writes.
 """
