@@ -1,39 +1,12 @@
 /* ===========================================================
-   StanNG — shared front-end utilities
-   (i18n dictionary, theme/lang persistence, toasts, sounds,
+   ERRFpanel — shared front-end utilities
+   (i18n dictionary, theme/lang persistence, toasts,
    ripple effect, small fetch helper). No external CDN deps.
+   NOTE: the legacy button sound-effect engine (SFX/playSfx)
+   was removed. Background music is handled by music.js.
    =========================================================== */
 
 const STANNG = (() => {
-  const SFX = {
-    click: '/static/sfx/click.ogg',
-    success: '/static/sfx/success.ogg',
-    error: '/static/sfx/error.ogg',
-    notify: '/static/sfx/notify.ogg',
-    toggle: '/static/sfx/toggle.ogg',
-    open: '/static/sfx/open.ogg',
-    close: '/static/sfx/close.ogg',
-  };
-  const audioCache = {};
-  let soundEnabled = localStorage.getItem('stanng_sound') !== 'off';
-
-  function playSfx(name, vol = 0.5) {
-    if (!soundEnabled) return;
-    try {
-      const src = SFX[name];
-      if (!src) return;
-      const a = new Audio(src);
-      a.volume = vol;
-      a.play().catch(() => {});
-    } catch (e) {}
-  }
-
-  function setSoundEnabled(v) {
-    soundEnabled = v;
-    localStorage.setItem('stanng_sound', v ? 'on' : 'off');
-  }
-  function isSoundEnabled() { return soundEnabled; }
-
   // ---------------- theme ----------------
   function getTheme() { return localStorage.getItem('stanng_theme') || 'dark'; }
   function setTheme(t) {
@@ -72,7 +45,7 @@ const STANNG = (() => {
     });
   }
 
-  // ---------------- toasts ----------------
+  // ---------------- toasts (silent — no sound effects) ----------------
   function ensureToastStack() {
     let stack = document.querySelector('.toast-stack');
     if (!stack) {
@@ -95,9 +68,6 @@ const STANNG = (() => {
     el.className = `toast ${type}`;
     el.innerHTML = `<span class="toast-icon" style="color:var(--${type === 'success' ? 'emerald' : type === 'error' ? 'crimson' : 'azure'})">${ICONS[type] || ICONS.info}</span><span>${message}</span>`;
     stack.appendChild(el);
-    if (type === 'success') playSfx('success');
-    else if (type === 'error') playSfx('error');
-    else playSfx('notify', 0.35);
     setTimeout(() => {
       el.classList.add('leaving');
       setTimeout(() => el.remove(), 220);
@@ -144,25 +114,6 @@ const STANNG = (() => {
     root.querySelectorAll('.btn, .icon-btn, .nav-item').forEach(attachRipple);
   }
 
-  // ---------------- sparkle field ----------------
-  function initSparkles(container, count = 26) {
-    if (!container) return;
-    for (let i = 0; i < count; i++) {
-      const s = document.createElement('span');
-      s.className = 'sparkle';
-      const left = Math.random() * 100;
-      const delay = Math.random() * 10;
-      const dur = 8 + Math.random() * 10;
-      const size = 2 + Math.random() * 3;
-      s.style.left = left + '%';
-      s.style.bottom = '-10px';
-      s.style.width = s.style.height = size + 'px';
-      s.style.animationDelay = delay + 's';
-      s.style.animationDuration = dur + 's';
-      container.appendChild(s);
-    }
-  }
-
   // ---------------- button loading helper ----------------
   function setLoading(btn, loading) {
     if (!btn) return;
@@ -202,10 +153,9 @@ const STANNG = (() => {
   }
 
   return {
-    playSfx, setSoundEnabled, isSoundEnabled,
     getTheme, setTheme, applyStoredTheme,
     getLang, setLang, t, translatePage,
-    toast, api, initRipples, attachRipple, initSparkles,
+    toast, api, initRipples, attachRipple,
     setLoading, shake, fmtBytes, fmtDuration,
   };
 })();
@@ -217,6 +167,4 @@ document.addEventListener('DOMContentLoaded', () => {
   document.body.classList.toggle('lang-en', STANNG.getLang() === 'en');
   STANNG.translatePage();
   STANNG.initRipples();
-  const field = document.querySelector('.sparkle-field');
-  if (field) STANNG.initSparkles(field);
 });

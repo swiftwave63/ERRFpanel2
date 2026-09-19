@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="description" content="ERRFpanel — unified config management panel">
 <title>{{ panel_name }} · Dashboard</title>
-<link rel="icon" href="/static/img/favicon-32.png">
-<link rel="apple-touch-icon" href="/static/img/favicon-180.png">
-<link rel="stylesheet" href="/static/css/fonts.css">
-<link rel="stylesheet" href="/static/css/theme.css">
-<link rel="stylesheet" href="/static/css/dashboard.css">
+<link rel="icon" href="/static/img/errf-logo.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/img/errf-logo.svg">
+<link rel="stylesheet" href="/static/css/fonts.css?v={{ asset_v }}">
+<link rel="stylesheet" href="/static/css/theme.css?v={{ asset_v }}">
+<link rel="stylesheet" href="/static/css/dashboard.css?v={{ asset_v }}">
 </head>
 <body>
 {% include "_icons.html" %}
-<div class="sparkle-field"></div>
 <a class="telegram-fab" href="{{ telegram_contact }}" target="_blank" rel="noopener" title="پشتیبانی تلگرام / Telegram Support">
   <svg><use href="#icon-telegram"/></svg>
 </a>
@@ -21,7 +21,7 @@
   <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-      <img src="/static/img/logo-square.png" alt="logo">
+      <img src="/static/img/errf-logo.svg" alt="ERRFpanel logo">
       <div>
         <div class="name">{{ panel_name }}</div>
         <div class="sub">v<span id="appVersion">-</span></div>
@@ -46,11 +46,18 @@
         <h1 id="viewTitle" data-i18n="nav_dashboard">داشبورد</h1>
       </div>
       <div class="topbar-actions">
+        <div class="music-player" id="musicPlayer" dir="ltr">
+          <audio id="bgMusic" preload="auto" loop></audio>
+          <button class="music-btn is-paused" id="musicToggle" title="Play music"><svg><use href="#icon-play"/></svg></button>
+          <svg width="15" height="15" style="color:var(--text-2); flex-shrink:0;"><use href="#icon-volume"/></svg>
+          <input type="range" class="music-vol" id="musicVolume" min="0" max="100" value="70" data-i18n-aria="music_volume_label">
+          <span class="music-vol-pct" id="musicVolumePct">70%</span>
+          <span class="music-time" id="musicTime">0:00</span>
+        </div>
         <div class="lang-toggle">
           <button type="button" data-lang="fa">FA</button>
           <button type="button" data-lang="en">EN</button>
         </div>
-        <button class="icon-btn" id="soundToggle" title="sound"><svg><use href="#icon-bolt"/></svg></button>
         <button class="icon-btn" id="themeToggle" title="theme"><svg><use href="#icon-moon"/></svg></button>
       </div>
     </header>
@@ -90,7 +97,7 @@
             </div>
           </div>
           <div class="col-4 win stat-card">
-            <div class="label"><svg><use href="#icon-bolt"/></svg><span data-i18n="dash_active_conn">اتصالات فعال</span></div>
+            <div class="label"><svg><use href="#icon-server"/></svg><span data-i18n="dash_active_conn">اتصالات فعال</span></div>
             <div class="value" id="statActiveConn">0</div>
           </div>
           <div class="col-4 win stat-card">
@@ -102,7 +109,7 @@
         <div class="grid">
           <div class="col-8 win">
             <div class="win-head"><h3><svg><use href="#icon-traffic"/></svg><span data-i18n="dash_hourly_chart">نمودار ترافیک ساعتی</span></h3></div>
-            <div class="win-body"><canvas id="trafficChart" height="240"></canvas></div>
+            <div class="win-body"><div class="chart-wrap"><canvas id="trafficChart" height="240"></canvas></div></div>
           </div>
           <div class="col-4 win">
             <div class="win-head"><h3><svg><use href="#icon-refresh"/></svg><span data-i18n="dash_ota_title">به‌روزرسانی پنل</span></h3></div>
@@ -149,7 +156,7 @@
               </table>
             </div>
             <div class="empty-state" id="inboundsEmpty" style="display:none;">
-              <svg><use href="#icon-owl"/></svg>
+              <svg><use href="#icon-server"/></svg>
               <div data-i18n="inb_empty">هنوز کاربری اضافه نشده است</div>
             </div>
           </div>
@@ -180,8 +187,6 @@
           </div>
         </div>
       </section>
-
-      <!-- ============ VIEW CLEAN IP حذف شد ============ -->
 
       <!-- ============ SECURITY VIEW ============ -->
       <section class="view" id="view-security">
@@ -234,16 +239,17 @@
                 <label data-i18n="settings_public_domain">دامنه عمومی (اختیاری، خالی = تشخیص خودکار)</label>
                 <input class="input" type="text" id="settingPublicDomain" placeholder="example.up.railway.app" style="direction:ltr;">
               </div>
+              <div class="field">
+                <label data-i18n="settings_sub_header">متن بالای اشتراک (اختیاری)</label>
+                <textarea class="input" id="settingSubHeader" maxlength="280" style="direction:auto;" placeholder="Please update your subscription"></textarea>
+                <div class="small muted mt-8" data-i18n="settings_sub_header_hint">این متن در بالای خروجی اشتراک نمایش داده می‌شود. خالی = رفتار قبلی.</div>
+              </div>
               <div class="field flex items-center justify-between" style="border:1px solid var(--border-soft); border-radius:12px; padding:12px 14px;">
                 <div>
                   <div style="font-weight:700; font-size:13.5px;" data-i18n="settings_keepalive">سیستم بیدارباش (Keep-Alive)</div>
                   <div class="small muted mt-8" data-i18n="settings_keepalive_hint">هر ۱۰ دقیقه یک بار پینگ داخلی برای جلوگیری از خواب رفتن سرویس</div>
                 </div>
                 <label class="switch"><input type="checkbox" id="settingKeepAlive" checked><span class="track"><span class="thumb"></span></span></label>
-              </div>
-              <div class="field flex items-center justify-between" style="border:1px solid var(--border-soft); border-radius:12px; padding:12px 14px;">
-                <div style="font-weight:700; font-size:13.5px;" data-i18n="settings_sound">جلوه‌های صوتی</div>
-                <label class="switch"><input type="checkbox" id="settingSound" checked><span class="track"><span class="thumb"></span></span></label>
               </div>
               <button class="btn btn-primary mt-12" id="saveSettingsBtn"><span data-i18n="save">ذخیره</span></button>
             </div>
@@ -253,6 +259,15 @@
             <div class="win-head"><h3><svg><use href="#icon-shield"/></svg><span data-i18n="settings_advanced_title">تنظیمات پیشرفته کانفیگ</span></h3></div>
             <div class="win-body">
               <div class="small muted mb-16" data-i18n="settings_advanced_hint">این مقادیر پیش‌فرض هنگام ساخت کانفیگ‌های جدید برای همه کاربران اعمال می‌شوند.</div>
+              <div class="field">
+                <label data-i18n="settings_remark_prefix">پیشوند نام کانفیگ</label>
+                <input class="input" type="text" id="settingRemarkPrefix" maxlength="32" placeholder="ERRFpanel" style="direction:ltr;">
+              </div>
+              <div class="field">
+                <label data-i18n="settings_remark_template">قالب نام کانفیگ</label>
+                <input class="input" type="text" id="settingRemarkTemplate" maxlength="128" placeholder="{prefix}-{name}-{proto}" style="direction:ltr;">
+                <div class="small muted mt-8" data-i18n="settings_remark_hint">فقط {prefix} و {name} و {proto} مجاز هستند. مثال: {prefix}-{name}-{proto}</div>
+              </div>
               <div class="field">
                 <label data-i18n="inb_fingerprint">اثر انگشت پیش‌فرض (Fingerprint)</label>
                 <select class="input" id="settingFingerprint">
@@ -366,7 +381,7 @@
   </div>
 </div>
 
-<!-- ============ MODAL: Links / QR (نسخه ۱.۴.۱) ============ -->
+<!-- ============ MODAL: Links / QR ============ -->
 <div class="modal-overlay" id="linksModal">
   <div class="modal">
     <div class="modal-head">
@@ -374,54 +389,55 @@
       <button class="icon-btn" data-close-modal="linksModal"><svg width="16" height="16"><use href="#icon-plus" style="transform:rotate(45deg)"/></svg></button>
     </div>
     <div class="modal-body flex-col gap-16">
+      <div class="sub-header-banner" id="subHeaderBanner" style="display:none;"></div>
       <div class="text-center">
         <div class="qr-box" id="qrBox"><img id="qrImg" width="180" height="180" alt="QR"></div>
       </div>
-      
-      <!-- لینک TLS -->
+
+      <!-- TLS link -->
       <div>
         <label class="small muted mb-8" style="display:block;" data-i18n="inb_link_tls">کانفیگ TLS (پورت ۴۴۳)</label>
-        <div class="link-row"><code id="linkTls"></code><button class="icon-btn btn-sm" data-copy="linkTls"><svg width="15" height="15"><use href="#icon-link"/></svg></button></div>
+        <div class="link-row"><code id="linkTls"></code><button class="icon-btn btn-sm" data-copy="linkTls"><svg width="15" height="15"><use href="#icon-link"/></svg><span class="row-action-label" data-i18n="copy">کپی</span></button></div>
       </div>
-      
-      <!-- لینک اشتراک -->
+
+      <!-- subscription link -->
       <div>
         <label class="small muted mb-8" style="display:block;" data-i18n="inb_sub_link">لینک اشتراک (سازگار با v2rayNG)</label>
-        <div class="link-row"><code id="linkSub"></code><button class="icon-btn btn-sm" data-copy="linkSub"><svg width="15" height="15"><use href="#icon-link"/></svg></button></div>
+        <div class="link-row"><code id="linkSub"></code><button class="icon-btn btn-sm" data-copy="linkSub"><svg width="15" height="15"><use href="#icon-link"/></svg><span class="row-action-label" data-i18n="copy">کپی</span></button></div>
         <div class="small muted mt-8" style="color:var(--gold-300);">
           <svg width="14" height="14" style="vertical-align:-2px;"><use href="#icon-info"/></svg>
           <span data-i18n="inb_sub_note">لینک اشتراک شامل دو کانفیگ نمایشی (وضعیت مصرف و پیام رایگان) به‌همراه کانفیگ TLS است.</span>
         </div>
       </div>
-      
-      <!-- لینک وضعیت -->
+
+      <!-- status link -->
       <div>
         <label class="small muted mb-8" style="display:block;" data-i18n="inb_status_link">لینک وضعیت (برای کاربر)</label>
-        <div class="link-row"><code id="linkStatus"></code><button class="icon-btn btn-sm" data-copy="linkStatus"><svg width="15" height="15"><use href="#icon-link"/></svg></button></div>
-      </div>
-      
-      <!-- لینک JSON -->
-      <div>
-        <label class="small muted mb-8" style="display:block;" data-i18n="inb_sub_link_json">لینک اشتراک JSON</label>
-        <div class="link-row"><code id="linkSubJson"></code><button class="icon-btn btn-sm" data-copy="linkSubJson"><svg width="15" height="15"><use href="#icon-link"/></svg></button></div>
+        <div class="link-row"><code id="linkStatus"></code><button class="icon-btn btn-sm" data-copy="linkStatus"><svg width="15" height="15"><use href="#icon-link"/></svg><span class="row-action-label" data-i18n="copy">کپی</span></button></div>
       </div>
 
-      <!-- لینک DoH -->
+      <!-- JSON link -->
+      <div>
+        <label class="small muted mb-8" style="display:block;" data-i18n="inb_sub_link_json">لینک اشتراک JSON</label>
+        <div class="link-row"><code id="linkSubJson"></code><button class="icon-btn btn-sm" data-copy="linkSubJson"><svg width="15" height="15"><use href="#icon-link"/></svg><span class="row-action-label" data-i18n="copy">کپی</span></button></div>
+      </div>
+
+      <!-- DoH link -->
       <div>
         <label class="small muted mb-8" style="display:block;" data-i18n="inb_doh_link">آدرس سرور DoH (DNS-over-HTTPS)</label>
-        <div class="link-row"><code id="linkDoh"></code><button class="icon-btn btn-sm" data-copy="linkDoh"><svg width="15" height="15"><use href="#icon-link"/></svg></button></div>
+        <div class="link-row"><code id="linkDoh"></code><button class="icon-btn btn-sm" data-copy="linkDoh"><svg width="15" height="15"><use href="#icon-link"/></svg><span class="row-action-label" data-i18n="copy">کپی</span></button></div>
         <div class="small muted mt-8" data-i18n="inb_doh_note" style="color:var(--gold-300);">
           <svg width="14" height="14" style="vertical-align:-2px;"><use href="#icon-info"/></svg>
           <span>قابل استفاده در کلاینت‌های v2rayNG / Sing-box و تنظیمات DNS امن مرورگرها</span>
         </div>
       </div>
 
-      <!-- توضیحات نهایی -->
+      <!-- footer note -->
       <div class="small muted" style="border-top:1px solid var(--border-soft); padding-top:14px;">
         <span data-i18n="inb_info_configs_note">
           لینک اشتراک به‌صورت متن ساده (Plain Text) ارائه می‌شود و شامل موارد زیر است:
           <br>📊 یک کانفیگ نمایشی برای نمایش وضعیت مصرف و اعتبار
-          <br>❤️ یک کانفیگ نمایشی با پیام «StanNG is Free ❤️»
+          <br>❤️ یک کانفیگ نمایشی با پیام «ERRFpanel is Free ❤️»
           <br>🔗 یک کانفیگ TLS واقعی برای اتصال
         </span>
       </div>
@@ -429,11 +445,10 @@
   </div>
 </div>
 
-<!-- مودال Clean IP حذف شد -->
-
-<script src="/static/js/i18n.js"></script>
-<script src="/static/js/common.js"></script>
-<script src="/static/js/chart-mini.js"></script>
-<script src="/static/js/dashboard.js"></script>
+<script src="/static/js/i18n.js?v={{ asset_v }}"></script>
+<script src="/static/js/common.js?v={{ asset_v }}"></script>
+<script src="/static/js/chart-mini.js?v={{ asset_v }}"></script>
+<script src="/static/js/dashboard.js?v={{ asset_v }}"></script>
+<script src="/static/js/music.js?v={{ asset_v }}"></script>
 </body>
 </html>

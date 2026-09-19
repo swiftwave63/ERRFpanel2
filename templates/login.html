@@ -3,23 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>StanNG · Login</title>
-<link rel="icon" href="/static/img/favicon-32.png">
-<link rel="apple-touch-icon" href="/static/img/favicon-180.png">
-<link rel="stylesheet" href="/static/css/fonts.css">
-<link rel="stylesheet" href="/static/css/theme.css">
-<link rel="stylesheet" href="/static/css/dashboard.css">
+<meta name="description" content="ERRFpanel — sign in to your management panel">
+<title>ERRFpanel · Login</title>
+<link rel="icon" href="/static/img/errf-logo.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/img/errf-logo.svg">
+<link rel="stylesheet" href="/static/css/fonts.css?v={{ asset_v }}">
+<link rel="stylesheet" href="/static/css/theme.css?v={{ asset_v }}">
+<link rel="stylesheet" href="/static/css/dashboard.css?v={{ asset_v }}">
 </head>
 <body>
 {% include "_icons.html" %}
-<a class="telegram-fab" href="https://t.me/rvivl" target="_blank" rel="noopener" title="پشتیبانی تلگرام / Telegram Support">
+<a class="telegram-fab" href="https://t.me/Espierz" target="_blank" rel="noopener" title="پشتیبانی تلگرام / Telegram Support">
   <svg><use href="#icon-telegram"/></svg>
 </a>
+<div class="music-player music-dock" dir="ltr">
+  <audio id="bgMusic" preload="auto" loop></audio>
+  <button class="music-btn is-paused" id="musicToggle" title="Play music"><svg><use href="#icon-play"/></svg></button>
+  <input type="range" class="music-vol" id="musicVolume" min="0" max="100" value="70">
+  <span class="music-vol-pct" id="musicVolumePct">70%</span>
+  <span class="music-time" id="musicTime">0:00</span>
+</div>
 <div class="auth-shell">
-  <div class="sparkle-field"></div>
   <div class="auth-card">
-    <img class="auth-logo" src="/static/img/logo-square.png" alt="StanNG">
-    <div class="brand-title" data-i18n="login_title">ورود به پنل</div>
+    <img class="auth-logo" src="/static/img/errf-logo.svg" alt="ERRFpanel">
+    <div class="brand-title"><span class="brand-name-accent">ERRFpanel</span></div>
     <div class="brand-sub" data-i18n="login_sub">با نام کاربری و رمز عبور خود وارد شوید</div>
 
     <form id="loginForm" class="shake-target" autocomplete="off">
@@ -55,16 +62,16 @@
   </div>
 </div>
 
-<script src="/static/js/i18n.js"></script>
-<script src="/static/js/common.js"></script>
+<script src="/static/js/i18n.js?v={{ asset_v }}"></script>
+<script src="/static/js/common.js?v={{ asset_v }}"></script>
+<script src="/static/js/music.js?v={{ asset_v }}"></script>
 <script>
 document.querySelectorAll('.lang-toggle button').forEach(btn => {
-  btn.addEventListener('click', () => { STANNG.setLang(btn.dataset.lang); STANNG.playSfx('toggle', 0.3); });
+  btn.addEventListener('click', () => { STANNG.setLang(btn.dataset.lang); });
 });
 document.getElementById('themeToggle').addEventListener('click', () => {
   const next = STANNG.getTheme() === 'dark' ? 'light' : 'dark';
   STANNG.setTheme(next);
-  STANNG.playSfx('toggle', 0.3);
 });
 document.querySelectorAll('[data-toggle-for]').forEach(btn => {
   btn.addEventListener('click', () => {

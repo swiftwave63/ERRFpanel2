@@ -38,6 +38,10 @@ DEFAULT_DB: Dict[str, Any] = {
         "fragment_packets": "tlshello",
         "fragment_length": "10-30",
         "fragment_interval": "10-20",
+        # ---- ERRFpanel remark/subscription customization (additive; safe defaults) ----
+        "sub_header_text": "",                 # custom display-only header line on top of subscription output
+        "remark_prefix": "ERRFpanel",          # {prefix} token used by the remark template
+        "remark_template": "{prefix}-{name}-{proto}",  # allowed tokens: {prefix} {name} {proto}
     },
     "inbounds": [],       # list of inbound/user dicts
     # "addresses" removed – clean-IP feature no longer supported

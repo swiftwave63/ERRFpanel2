@@ -1,12 +1,10 @@
 /* ===========================================================
-   StanNG — bilingual dictionary (fa / en) v1.5.2
-   Removed: Clean IP, Non‑TLS
-   Added: Info Configs descriptions, JSON subscription link
+   ERRFpanel — bilingual dictionary (fa / en)
    =========================================================== */
 window.I18N = {
   // ---- brand / generic ----
-  brand_name: { fa: 'StanNG', en: 'StanNG' },
-  brand_tagline: { fa: 'دروازه‌ی نامرئی به دنیای شبکه', en: 'The invisible gateway to the wizarding net' },
+  brand_name: { fa: 'ERRFpanel', en: 'ERRFpanel' },
+  brand_tagline: { fa: 'مدیریت یکپارچه کانفیگ', en: 'Unified config management' },
   loading: { fa: 'در حال بارگذاری...', en: 'Loading...' },
   save: { fa: 'ذخیره', en: 'Save' },
   cancel: { fa: 'انصراف', en: 'Cancel' },
@@ -57,7 +55,7 @@ window.I18N = {
   nav_support: { fa: 'پشتیبانی تلگرام', en: 'Telegram Support' },
 
   // ---- dashboard ----
-  dash_welcome: { fa: 'به قلمرو StanNG خوش آمدید', en: 'Welcome to the StanNG realm' },
+  dash_welcome: { fa: 'به ERRFpanel خوش آمدید', en: 'Welcome to ERRFpanel' },
   dash_cpu: { fa: 'پردازنده', en: 'CPU' },
   dash_ram: { fa: 'حافظه', en: 'Memory' },
   dash_uptime: { fa: 'زمان فعالیت', en: 'Uptime' },
@@ -103,6 +101,7 @@ window.I18N = {
   inb_regenerate: { fa: 'صدور لینک جدید (ابطال قبلی)', en: 'Regenerate link (revoke old)' },
   inb_regenerate_confirm: { fa: 'لینک‌های قبلی این کاربر غیرفعال می‌شوند. ادامه می‌دهید؟', en: 'Previous links for this user will be revoked. Continue?' },
   inb_regenerated: { fa: 'لینک جدید صادر شد', en: 'New link issued' },
+  inb_regen_short: { fa: 'لینک جدید', en: 'New link' },
   inb_links: { fa: 'لینک‌ها', en: 'Links' },
   inb_qr: { fa: 'کد QR', en: 'QR Code' },
   inb_sub_link: { fa: 'لینک اشتراک (سازگار با v2rayNG)', en: 'Subscription Link (v2rayNG compatible)' },
@@ -120,8 +119,8 @@ window.I18N = {
     en: 'The subscription link includes two display-only configs (usage status and free message) plus the TLS config.'
   },
   inb_info_configs_note: {
-    fa: 'لینک اشتراک به‌صورت متن ساده (Plain Text) ارائه می‌شود و شامل موارد زیر است:\n📊 یک کانفیگ نمایشی برای نمایش وضعیت مصرف و اعتبار\n❤️ یک کانفیگ نمایشی با پیام «StanNG is Free ❤️»\n🔗 یک کانفیگ TLS واقعی برای اتصال',
-    en: 'The subscription link is provided as plain text and includes:\n📊 A display-only config showing usage and expiry status\n❤️ A display-only config with "StanNG is Free ❤️" message\n🔗 A real TLS config for connection'
+    fa: 'لینک اشتراک به‌صورت متن ساده (Plain Text) ارائه می‌شود و شامل موارد زیر است:\n📊 یک کانفیگ نمایشی برای نمایش وضعیت مصرف و اعتبار\n❤️ یک کانفیگ نمایشی با پیام «ERRFpanel is Free ❤️»\n🔗 یک کانفیگ TLS واقعی برای اتصال',
+    en: 'The subscription link is provided as plain text and includes:\n📊 A display-only config showing usage and expiry status\n❤️ A display-only config with "ERRFpanel is Free ❤️" message\n🔗 A real TLS config for connection'
   },
   inb_empty: { fa: 'هنوز کاربری اضافه نشده است', en: 'No users added yet' },
   inb_active_devices: { fa: 'دستگاه فعال', en: 'active devices' },
@@ -159,7 +158,11 @@ window.I18N = {
   settings_keepalive: { fa: 'سیستم بیدارباش (Keep-Alive)', en: 'Keep-Alive System' },
   settings_keepalive_hint: { fa: 'هر ۱۰ دقیقه یک بار پینگ داخلی برای جلوگیری از خواب رفتن سرویس', en: 'Pings itself every 10 minutes to prevent free-tier sleep' },
   settings_ota_repo: { fa: 'مخزن گیت‌هاب برای آپدیت', en: 'GitHub Repo for Updates' },
-  settings_sound: { fa: 'جلوه‌های صوتی', en: 'Sound Effects' },
+  settings_sub_header: { fa: 'متن بالای اشتراک (اختیاری)', en: 'Subscription header text (optional)' },
+  settings_sub_header_hint: { fa: 'این متن در بالای خروجی اشتراک نمایش داده می‌شود. خالی = رفتار قبلی.', en: 'Shown at the top of the subscription output. Empty = legacy behavior.' },
+  settings_remark_prefix: { fa: 'پیشوند نام کانفیگ', en: 'Config name prefix' },
+  settings_remark_template: { fa: 'قالب نام کانفیگ', en: 'Config name template' },
+  settings_remark_hint: { fa: 'فقط {prefix} و {name} و {proto} مجاز هستند. مثال: {prefix}-{name}-{proto}', en: 'Only {prefix}, {name} and {proto} are allowed. Example: {prefix}-{name}-{proto}' },
   settings_theme: { fa: 'پوسته', en: 'Theme' },
   settings_theme_dark: { fa: 'تاریک', en: 'Dark' },
   settings_theme_light: { fa: 'روشن', en: 'Light' },
@@ -187,4 +190,11 @@ window.I18N = {
   copy_link: { fa: 'کپی لینک', en: 'Copy link' },
   refresh: { fa: 'بروزرسانی', en: 'Refresh' },
   search_placeholder: { fa: 'جستجوی کاربر...', en: 'Search users...' },
+
+  // ---- background music ----
+  music_play: { fa: 'پخش موسیقی', en: 'Play music' },
+  music_pause: { fa: 'توقف موسیقی', en: 'Pause music' },
+  music_volume_label: { fa: 'صدا', en: 'Volume' },
+  music_tap_to_play: { fa: 'برای پخش ضربه بزنید', en: 'Tap to play' },
+  music_no_source: { fa: 'فایل موسیقی هنوز تنظیم نشده است', en: 'Music file not configured yet' },
 };

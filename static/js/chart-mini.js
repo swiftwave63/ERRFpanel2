@@ -1,5 +1,5 @@
 /* ===========================================================
-   StanNG — dependency-free hourly traffic chart (canvas + HTML tooltip)
+   ERRFpanel — dependency-free hourly traffic chart (canvas + HTML tooltip)
    Redesigned for more detail: dual bars (up/down) + a smooth total-traffic
    line overlay, real byte-formatted Y-axis, day-boundary markers, a legend,
    and an interactive hover/tap tooltip. Still zero external chart library.

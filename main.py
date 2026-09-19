@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-StanNG — a single-service VLESS-over-WebSocket panel, wizarding-academy themed.
+ERRFpanel — a single-service VLESS-over-WebSocket panel.
 Version 1.5.5 — fully fixed: OTA, stats, traffic page, hourly chart, active connections (last_seen method).
 """
 import asyncio
@@ -33,8 +33,10 @@ from colo_map import describe_colo
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 APP_VERSION = "1.5.5"
-PANEL_NAME = "StanNG"
-TELEGRAM_CONTACT = "https://t.me/rvivl"
+# Bump whenever static CSS/JS assets change so browsers fetch fresh copies.
+ASSET_VERSION = "2"
+PANEL_NAME = "ERRFpanel"
+TELEGRAM_CONTACT = "https://t.me/Espierz"
 OTA_REPO = "youdidking/stanngv2"
 OTA_HEADERS = {
     "Accept": "application/vnd.github+json",
@@ -75,7 +77,7 @@ async def lifespan(app: FastAPI):
     await doh_http_client.aclose()
 
 
-app = FastAPI(title="StanNG", version=APP_VERSION, lifespan=lifespan)
+app = FastAPI(title="ERRFpanel", version=APP_VERSION, lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 
@@ -326,7 +328,7 @@ async def setup_page(request: Request):
     db = await store.get()
     if db.get("admin"):
         return RedirectResponse("/login")
-    return templates.TemplateResponse(request, "setup.html", {"app_version": APP_VERSION})
+    return templates.TemplateResponse(request, "setup.html", {"app_version": APP_VERSION, "asset_v": ASSET_VERSION})
 
 
 @app.get("/login", response_class=HTMLResponse)
@@ -336,7 +338,7 @@ async def login_page(request: Request):
         return RedirectResponse("/setup")
     if await current_username(request):
         return RedirectResponse("/dashboard")
-    return templates.TemplateResponse(request, "login.html", {"app_version": APP_VERSION})
+    return templates.TemplateResponse(request, "login.html", {"app_version": APP_VERSION, "asset_v": ASSET_VERSION})
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
@@ -348,6 +350,7 @@ async def dashboard_page(request: Request):
         return RedirectResponse("/login")
     return templates.TemplateResponse(request, "dashboard.html", {
         "app_version": APP_VERSION,
+        "asset_v": ASSET_VERSION,
         "panel_name": PANEL_NAME,
         "telegram_contact": TELEGRAM_CONTACT,
     })
@@ -361,6 +364,7 @@ async def status_page(request: Request, uid: str):
         return HTMLResponse("<h1>404</h1><p>Not found.</p>", status_code=404)
     return templates.TemplateResponse(request, "status.html", {
         "uid": uid, "app_version": APP_VERSION,
+        "asset_v": ASSET_VERSION,
         "panel_name": PANEL_NAME,
         "telegram_contact": TELEGRAM_CONTACT,
     })
@@ -494,6 +498,8 @@ async def api_update_settings(request: Request, user: str = Depends(require_auth
         "lang", "theme", "public_domain", "keep_alive",
         "default_fingerprint", "default_alpn", "sni_override",
         "fragment_enabled", "fragment_packets", "fragment_length", "fragment_interval",
+        # ERRFpanel remark/subscription customization (additive keys only)
+        "sub_header_text", "remark_prefix", "remark_template",
     }
     valid_fp = {"chrome", "ios", "firefox", "edge", "random"}
     valid_alpn = {"http/1.1", "h2,http/1.1", "h3,h2,http/1.1"}
@@ -507,6 +513,29 @@ async def api_update_settings(request: Request, user: str = Depends(require_auth
                 continue
             if k == "default_alpn" and v not in valid_alpn:
                 continue
+            if k == "sub_header_text":
+                # Plain display-only header line: cap length, strip control chars.
+                # Empty string restores the exact legacy subscription output.
+                if not isinstance(v, str):
+                    continue
+                v = v.replace("\r", " ").replace("\n", " ")[:280].strip()
+            if k == "remark_prefix":
+                # Short brand token used by the remark template.
+                if not isinstance(v, str):
+                    continue
+                v = v.replace("\r", " ").replace("\n", " ").replace("#", "")[:32].strip()
+                if not v:
+                    continue
+            if k == "remark_template":
+                # Only the controlled placeholders {prefix} {name} {proto} are allowed.
+                # Must contain at least {name}; anything else falls back (key untouched).
+                if not isinstance(v, str):
+                    continue
+                v = v[:128].strip()
+                if "{name}" not in v:
+                    continue
+                if re.sub(r"\{(prefix|name|proto)\}", "", v).find("{") != -1:
+                    continue
             s[k] = v
 
     db = await store.mutate(_apply)
@@ -643,16 +672,65 @@ async def api_regenerate_uuid(uid: str, user: str = Depends(require_auth)):
     return {"ok": True, "inbound": serialize_inbound(inbound_by_uid(db, uid))}
 
 
+# ------------------------------------------------------------------ ERRFpanel remark customization
+# Presentation-only helpers: they shape NOTHING but the human-readable
+# remark/name fragment of generated links. UUID, host, port, path, TLS,
+# fingerprint, ALPN, SNI and every other connection parameter are untouched.
+DEFAULT_REMARK_TEMPLATE = "{prefix}-{name}-{proto}"
+
+
+def _clean_remark_token(text, limit: int) -> str:
+    return (text or "").replace("\r", " ").replace("\n", " ").strip()[:limit]
+
+
+def get_remark_prefix(settings) -> str:
+    return _clean_remark_token((settings or {}).get("remark_prefix") or "ERRFpanel", 32) or "ERRFpanel"
+
+
+def render_config_remark(settings, name: str, proto: str) -> str:
+    """Render a display remark from the admin-configured template.
+
+    Only the controlled placeholders {prefix} {name} {proto} are expanded.
+    Any misconfiguration falls back to the default template so output is
+    never broken and never affects connection parameters.
+    """
+    settings = settings or {}
+    prefix = get_remark_prefix(settings)
+    template = ((settings.get("remark_template") or DEFAULT_REMARK_TEMPLATE))[:128]
+    if "{name}" not in template:
+        template = DEFAULT_REMARK_TEMPLATE
+    if re.sub(r"\{(prefix|name|proto)\}", "", template).find("{") != -1:
+        template = DEFAULT_REMARK_TEMPLATE
+    remark = (
+        template
+        .replace("{prefix}", prefix)
+        .replace("{name}", name or "User")
+        .replace("{proto}", proto)
+    )
+    remark = _clean_remark_token(remark, 96)
+    return remark or f"{prefix}-{name or 'User'}-{proto}"
+
+
+def get_sub_header_text(settings) -> str:
+    """Admin-configured display-only header line (empty = legacy output)."""
+    return _clean_remark_token((settings or {}).get("sub_header_text") or "", 280)
+
+
 def build_links(request: Request, db, ib) -> dict:
     host = public_host(request, db)
     uuidv = ib["uuid"]
     name = ib["name"]
-    fp = ib.get("fp") or (db.get("settings") or {}).get("default_fingerprint", "chrome")
-    alpn = (db.get("settings") or {}).get("default_alpn", "http/1.1")
-    sni = (db.get("settings") or {}).get("sni_override") or host
+    settings = db.get("settings") or {}
+    fp = ib.get("fp") or settings.get("default_fingerprint", "chrome")
+    alpn = settings.get("default_alpn", "http/1.1")
+    sni = settings.get("sni_override") or host
     port_tls = 443
 
-    vl_ws_tls = f"vless://{uuidv}@{host}:{port_tls}?encryption=none&security=tls&type=ws&host={quote(host)}&path={quote('/vl-ws', safe='/')}&sni={quote(sni)}&fp={fp}&alpn={quote(alpn, safe=',/')}#{quote(f'StanNG-{name}-VL-WS-TLS')}"
+    remark_ws = render_config_remark(settings, name, "VL-WS-TLS")
+    remark_vm = render_config_remark(settings, name, "VM-WS-TLS")
+    remark_xh = render_config_remark(settings, name, "VL-XHTTP-TLS")
+
+    vl_ws_tls = f"vless://{uuidv}@{host}:{port_tls}?encryption=none&security=tls&type=ws&host={quote(host)}&path={quote('/vl-ws', safe='/')}&sni={quote(sni)}&fp={fp}&alpn={quote(alpn, safe=',/')}#{quote(remark_ws)}"
 
     def make_vmess(port, tls_mode, remark):
         vm_json = {
@@ -662,9 +740,9 @@ def build_links(request: Request, db, ib) -> dict:
         }
         b64 = base64.b64encode(json.dumps(vm_json).encode()).decode()
         return f"vmess://{b64}"
-    
-    vm_ws_tls = make_vmess(port_tls, "tls", f"StanNG-{name}-VM-WS-TLS")
-    vl_xh_tls = f"vless://{uuidv}@{host}:{port_tls}?encryption=none&security=tls&type=xhttp&host={quote(host)}&path={quote('/vl-xhttp', safe='/')}&sni={quote(sni)}&fp={fp}&alpn=h2#{quote(f'StanNG-{name}-VL-XHTTP-TLS')}"
+
+    vm_ws_tls = make_vmess(port_tls, "tls", remark_vm)
+    vl_xh_tls = f"vless://{uuidv}@{host}:{port_tls}?encryption=none&security=tls&type=xhttp&host={quote(host)}&path={quote('/vl-xhttp', safe='/')}&sni={quote(sni)}&fp={fp}&alpn=h2#{quote(remark_xh)}"
 
     st = inbound_status(ib)
     quota_gb = ib.get("quota_gb") or 0
@@ -672,7 +750,7 @@ def build_links(request: Request, db, ib) -> dict:
     quota_txt = f"{used_gb:.2f}/{quota_gb:g}GB" if quota_gb > 0 else f"{used_gb:.2f}GB used"
     days_txt = f"{st['days_left']}d left" if ib.get("expire_at") else "no expiry"
     status_remark = f"📊 {quota_txt} | ⏳ {days_txt}"
-    free_remark = "StanNG Multi-Protocol ❤️"
+    free_remark = f"{get_remark_prefix(settings)} Multi-Protocol ❤️"
 
     dummy_uuid_status = "00000000-0000-0000-0000-000000000001"
     dummy_uuid_credit = "00000000-0000-0000-0000-000000000002"
@@ -682,6 +760,14 @@ def build_links(request: Request, db, ib) -> dict:
         {"remark": status_remark, "link": dummy_link_status, "kind": "status"},
         {"remark": free_remark, "link": dummy_link_credit, "kind": "credit"},
     ]
+
+    # Custom display-only header: prepended BEFORE the real configs, never a
+    # connectable entry (non-routable dummy UUID). Empty = legacy behavior.
+    header_text = get_sub_header_text(settings)
+    if header_text:
+        dummy_uuid_header = "00000000-0000-0000-0000-000000000003"
+        dummy_link_header = f"vless://{dummy_uuid_header}@127.0.0.1:10003?encryption=none&security=none&type=tcp&headerType=none#{quote(header_text)}"
+        info_configs.insert(0, {"remark": header_text, "link": dummy_link_header, "kind": "header"})
 
     all_links = [vl_ws_tls, vm_ws_tls, vl_xh_tls]
 
@@ -754,11 +840,11 @@ async def sub_plain(uid: str, request: Request):
         "Profile-Update-Interval": "1",
         "profile-update-interval": "1",
         # تغییر زیر اعمال شده است:
-        "Profile-Title": "base64:2YHZhNi02YUgU3Rhbk5HINeo2YXYs9in2YUg2YHZg9in2YUg2YHZhiDYsdmF2KfbjCDZiNiv2YbYqg==",
+        "Profile-Title": "base64:RVJSRnBhbmVsIPCfmoA=",
         "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
         "Pragma": "no-cache",
         "Expires": "0",
-        "X-Powered-By": "StanNG",
+        "X-Powered-By": "ERRFpanel",
     }
     return Response(content=b64, media_type="text/plain", headers=headers)
 
@@ -783,7 +869,7 @@ async def sub_json(uid: str, request: Request):
         "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
         "Pragma": "no-cache",
         "Expires": "0",
-        "X-Powered-By": "StanNG",
+        "X-Powered-By": "ERRFpanel",
     }
     return JSONResponse({
         "name": ib["name"],

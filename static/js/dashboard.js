@@ -1,5 +1,5 @@
 /* ===========================================================
-   StanNG — dashboard controller (v1.5.3)
+   ERRFpanel — dashboard controller
    Fully compatible with plain‑text subscription links
    (Info Configs + TLS), no Non‑TLS, no Clean IP.
    =========================================================== */
@@ -14,7 +14,10 @@
     document.getElementById('otaCurrent').textContent = (me.settings && me.settings.app_version) || me.app_version;
     if (me.settings) {
       document.getElementById('settingPublicDomain').value = me.settings.public_domain || '';
+      document.getElementById('settingSubHeader').value = me.settings.sub_header_text || '';
       document.getElementById('settingKeepAlive').checked = me.settings.keep_alive !== false;
+      document.getElementById('settingRemarkPrefix').value = me.settings.remark_prefix || 'ERRFpanel';
+      document.getElementById('settingRemarkTemplate').value = me.settings.remark_template || '{prefix}-{name}-{proto}';
       document.getElementById('settingFingerprint').value = me.settings.default_fingerprint || 'chrome';
       document.getElementById('settingAlpn').value = me.settings.default_alpn || 'http/1.1';
       document.getElementById('settingSniOverride').value = me.settings.sni_override || '';
@@ -24,8 +27,6 @@
       document.getElementById('settingFragmentInterval').value = me.settings.fragment_interval || '10-20';
     }
   }).catch(() => { window.location.href = '/login'; });
-
-  document.getElementById('settingSound').checked = STANNG.isSoundEnabled();
 
   // ---------------- nav / view switching ----------------
   const views = document.querySelectorAll('.view');
@@ -41,7 +42,6 @@
     if (name === 'inbounds') loadInbounds();
     if (name === 'traffic') loadInbounds();
     closeSidebarMobile();
-    STANNG.playSfx('open', 0.3);
   }
   navItems.forEach(item => item.addEventListener('click', () => showView(item.dataset.view)));
 
@@ -66,19 +66,15 @@
     btn.addEventListener('click', () => {
       STANNG.setLang(btn.dataset.lang);
       viewTitle.textContent = STANNG.t(viewTitle.getAttribute('data-i18n'));
-      STANNG.playSfx('toggle', 0.3);
+      document.querySelectorAll('[data-copy]').forEach(b => {
+        b.setAttribute('title', STANNG.t('copy'));
+        b.setAttribute('aria-label', STANNG.t('copy'));
+      });
     });
   });
   document.getElementById('themeToggle').addEventListener('click', () => {
     STANNG.setTheme(STANNG.getTheme() === 'dark' ? 'light' : 'dark');
-    STANNG.playSfx('toggle', 0.3);
     renderTrafficChart(document.getElementById('trafficChart'), lastHourly);
-  });
-  document.getElementById('soundToggle').addEventListener('click', () => {
-    const next = !STANNG.isSoundEnabled();
-    STANNG.setSoundEnabled(next);
-    document.getElementById('settingSound').checked = next;
-    if (next) STANNG.playSfx('click');
   });
 
   // ---------------- logout ----------------
@@ -90,11 +86,9 @@
   // ---------------- modal helpers ----------------
   function openModal(id) {
     document.getElementById(id).classList.add('open');
-    STANNG.playSfx('open', 0.4);
   }
   function closeModal(id) {
     document.getElementById(id).classList.remove('open');
-    STANNG.playSfx('close', 0.4);
   }
   document.querySelectorAll('[data-close-modal]').forEach(btn => {
     btn.addEventListener('click', () => closeModal(btn.dataset.closeModal));
@@ -105,6 +99,8 @@
 
   // ---------------- dashboard stats polling ----------------
   async function refreshStats() {
+    // scroll/main-thread hygiene: never burn frames redrawing for a hidden tab
+    if (document.hidden) return;
     try {
       const s = await STANNG.api('/stats');
       document.getElementById('statCpu').textContent = s.cpu_percent.toFixed(1) + '%';
@@ -128,7 +124,11 @@
   }
   refreshStats();
   setInterval(refreshStats, 8000);
-  window.addEventListener('resize', () => renderTrafficChart(document.getElementById('trafficChart'), lastHourly));
+  let chartResizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(chartResizeTimer);
+    chartResizeTimer = setTimeout(() => renderTrafficChart(document.getElementById('trafficChart'), lastHourly), 150);
+  });
 
   // ---------------- OTA ----------------
   let otaLatestKnown = null;
@@ -257,11 +257,11 @@
         <td data-label="${STANNG.t('inb_max_conn')}">${st.active_connections}${ib.max_connections ? ' / ' + ib.max_connections : ''} <span class="small muted">${STANNG.t('inb_active_devices')}</span></td>
         <td data-label="${STANNG.t('inb_actions')}">
           <div class="row-actions">
-            <button class="icon-btn btn-sm" data-action="links" data-uid="${ib.uid}" title="${STANNG.t('inb_links')}"><svg width="15" height="15"><use href="#icon-qr"/></svg></button>
-            <button class="icon-btn btn-sm" data-action="edit" data-uid="${ib.uid}" title="${STANNG.t('edit')}"><svg width="15" height="15"><use href="#icon-edit"/></svg></button>
-            <button class="icon-btn btn-sm" data-action="reset" data-uid="${ib.uid}" title="${STANNG.t('inb_reset_usage')}"><svg width="15" height="15"><use href="#icon-refresh"/></svg></button>
-            <button class="icon-btn btn-sm" data-action="regen" data-uid="${ib.uid}" title="${STANNG.t('inb_regenerate')}"><svg width="15" height="15"><use href="#icon-key"/></svg></button>
-            <button class="icon-btn btn-sm" data-action="delete" data-uid="${ib.uid}" title="${STANNG.t('delete')}" style="color:var(--crimson)"><svg width="15" height="15"><use href="#icon-trash"/></svg></button>
+            <button class="icon-btn btn-sm" data-action="links" data-uid="${ib.uid}" title="${STANNG.t('inb_links')}" aria-label="${STANNG.t('inb_links')}"><svg width="15" height="15"><use href="#icon-qr"/></svg><span class="row-action-label">${STANNG.t('inb_links')}</span></button>
+            <button class="icon-btn btn-sm" data-action="edit" data-uid="${ib.uid}" title="${STANNG.t('edit')}" aria-label="${STANNG.t('edit')}"><svg width="15" height="15"><use href="#icon-edit"/></svg><span class="row-action-label">${STANNG.t('edit')}</span></button>
+            <button class="icon-btn btn-sm" data-action="reset" data-uid="${ib.uid}" title="${STANNG.t('inb_reset_usage')}" aria-label="${STANNG.t('inb_reset_usage')}"><svg width="15" height="15"><use href="#icon-refresh"/></svg><span class="row-action-label">${STANNG.t('inb_reset_usage')}</span></button>
+            <button class="icon-btn btn-sm" data-action="regen" data-uid="${ib.uid}" title="${STANNG.t('inb_regenerate')}" aria-label="${STANNG.t('inb_regenerate')}"><svg width="15" height="15"><use href="#icon-key"/></svg><span class="row-action-label">${STANNG.t('inb_regen_short')}</span></button>
+            <button class="icon-btn btn-sm" data-action="delete" data-uid="${ib.uid}" title="${STANNG.t('delete')}" aria-label="${STANNG.t('delete')}" style="color:var(--crimson)"><svg width="15" height="15"><use href="#icon-trash"/></svg><span class="row-action-label">${STANNG.t('delete')}</span></button>
           </div>
         </td>`;
       tbody.appendChild(tr);
@@ -373,11 +373,23 @@
     }
   }
 
-  // ============ LINKS MODAL (v1.4.1) ============
+  // ============ LINKS MODAL ============
   async function showLinksModal(uid) {
     try {
       const r = await STANNG.api(`/api/inbounds/${uid}/links`);
-      
+
+      // Custom subscription header (display-only): show it above the output.
+      const banner = document.getElementById('subHeaderBanner');
+      const headerEntry = (r.links.info_configs || []).find(c => c.kind === 'header');
+      if (banner) {
+        if (headerEntry && headerEntry.remark) {
+          banner.textContent = headerEntry.remark;
+          banner.style.display = '';
+        } else {
+          banner.textContent = '';
+          banner.style.display = 'none';
+        }
+      }
       // نمایش لینک TLS
       document.getElementById('linkTls').textContent = r.links.tls || '';
       
@@ -407,11 +419,12 @@
   function copyText(text) {
     navigator.clipboard.writeText(text).then(() => {
       STANNG.toast(STANNG.t('copied'), 'success', 1600);
-      STANNG.playSfx('click', 0.4);
     }).catch(() => STANNG.toast('error', 'error'));
   }
 
   document.querySelectorAll('[data-copy]').forEach(btn => {
+    btn.setAttribute('title', STANNG.t('copy'));
+    btn.setAttribute('aria-label', STANNG.t('copy'));
     btn.addEventListener('click', () => {
       const targetId = btn.dataset.copy;
       const el = document.getElementById(targetId);
@@ -455,9 +468,9 @@
   document.getElementById('saveSettingsBtn').addEventListener('click', async () => {
     const payload = {
       public_domain: document.getElementById('settingPublicDomain').value.trim(),
+      sub_header_text: document.getElementById('settingSubHeader').value,
       keep_alive: document.getElementById('settingKeepAlive').checked,
     };
-    STANNG.setSoundEnabled(document.getElementById('settingSound').checked);
     const btn = document.getElementById('saveSettingsBtn');
     STANNG.setLoading(btn, true);
     try {
@@ -473,6 +486,8 @@
   // ---------------- advanced config settings ----------------
   document.getElementById('saveAdvancedBtn').addEventListener('click', async () => {
     const payload = {
+      remark_prefix: document.getElementById('settingRemarkPrefix').value.trim(),
+      remark_template: document.getElementById('settingRemarkTemplate').value.trim(),
       default_fingerprint: document.getElementById('settingFingerprint').value,
       default_alpn: document.getElementById('settingAlpn').value,
       sni_override: document.getElementById('settingSniOverride').value.trim(),
